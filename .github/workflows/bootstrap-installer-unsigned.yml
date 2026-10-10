@@ -71,11 +71,16 @@ jobs:
           xcrun --find actool || echo "::warning::xcrun cannot find actool"
 
       - name: Build (unsigned)
+        # The macOS 26 layered icon (icons/icon.icon) needs an actool that
+        # co-operates; it is artwork-only and irrelevant to functional
+        # verification, so the unsigned build ships the classic .icns set.
+        # Overridden here via --config so tauri.conf.json (and signed
+        # releases) keep the full icon set.
         run: |
           rustup target add aarch64-apple-darwin
           npm ci --workspace apps/bootstrap-installer --include-workspace-root=false --prefer-online --no-audit --no-fund
           cd apps/bootstrap-installer
-          npx tauri build --target aarch64-apple-darwin --bundles app,dmg
+          npx tauri build --target aarch64-apple-darwin --bundles app,dmg --config '{"bundle":{"icon":["icons/32x32.png","icons/128x128.png","icons/128x128@2x.png","icons/icon.icns","icons/icon.ico"]}}'
 
       - name: Collect artifacts
         run: |
