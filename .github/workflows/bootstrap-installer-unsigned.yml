@@ -55,16 +55,20 @@ jobs:
 
       - name: Select Xcode 26 for the macOS 26 layered icon
         # Tauri's bundler compiles src-tauri/icons/icon.icon to Assets.car with
-        # actool, which only Xcode >= 26 ships; on an older Xcode it logs an
-        # error and ships the .icns alone. Non-fatal here: this build is for
-        # functional verification, not artwork.
+        # actool, which only Xcode >= 26 ships. The runner keeps an older
+        # Xcode selected, and DEVELOPER_DIR alone does not always reach the
+        # tool Tauri shells out to — so switch the active developer dir AND
+        # put its usr/bin on PATH. Smoke-check actool before the long build.
         run: |
           xcode="$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)"
           if [ -z "$xcode" ]; then
-            echo "::warning::no Xcode 26 on this runner; shipping the .icns alone"
+            echo "::warning::no Xcode 26 on this runner; the .icon package may fail to compile"
           else
             echo "DEVELOPER_DIR=$xcode/Contents/Developer" >> "$GITHUB_ENV"
+            echo "$xcode/Contents/Developer/usr/bin" >> "$GITHUB_PATH"
+            sudo xcode-select --switch "$xcode/Contents/Developer"
           fi
+          xcrun --find actool || echo "::warning::xcrun cannot find actool"
 
       - name: Build (unsigned)
         run: |
